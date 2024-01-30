@@ -86,7 +86,7 @@ contract ShopPromotion {
     function applyPromotionToCustomer(
         address _customer,
         uint256 _promotionIndex
-    ) public onlyShopPromotionOwner promotionChecked(_promotionIndex) {
+    ) external onlyShopPromotionOwner promotionChecked(_promotionIndex) {
         Promotion storage promotion = s_promotions[_promotionIndex];
         if (
             promotion.customerMapping[_customer] == 0 &&
@@ -116,7 +116,7 @@ contract ShopPromotion {
     function deleteCustomerFromPromotion(
         address _customer,
         uint256 _promotionIndex
-    ) public onlyShopPromotionOwner promotionChecked(_promotionIndex) {
+    ) external onlyShopPromotionOwner promotionChecked(_promotionIndex) {
         if (!existsCustomerInPromotion(_customer, _promotionIndex)) {
             revert ShopPromotion_CustomerNotInPromotion();
         }
@@ -144,7 +144,7 @@ contract ShopPromotion {
 
     function deletePromotion(
         uint256 _promotionIndex
-    ) public onlyShopPromotionOwner promotionChecked(_promotionIndex) {
+    ) external onlyShopPromotionOwner promotionChecked(_promotionIndex) {
         bytes32[] memory namesOfPromotion = s_namesOfPromotion;
         s_promotions[_promotionIndex].nameOfPromotion = 0x00;
         if (namesOfPromotion.length > 1) {
@@ -204,7 +204,7 @@ contract ShopPromotion {
         uint256 _expiringDate,
         uint256 _numberOfMaxCustomers,
         uint256 _numberOfMaxPromotionUses
-    ) public onlyShopPromotionOwner {
+    ) external onlyShopPromotionOwner {
         if (_promotionName == 0x00 || existsPromotion(_promotionName)) {
             revert ShopPromotion_PromotionExistent();
         }
@@ -219,11 +219,11 @@ contract ShopPromotion {
         s_namesOfPromotion.push(_promotionName);
     }
 
-    function getOwner() public view returns (address) {
+    function getOwner() external view returns (address) {
         return i_owner;
     }
 
-    function getPromotions() public view returns (bytes32[] memory) {
+    function getPromotions() external view returns (bytes32[] memory) {
         return s_namesOfPromotion;
     }
 
@@ -232,7 +232,7 @@ contract ShopPromotion {
      * @param _name is the name of the promotion wanted to be applied
      */
 
-    function getPromotionIndex(bytes32 _name) public view returns (int256) {
+    function getPromotionIndex(bytes32 _name) external view returns (int256) {
         if (existsPromotion(_name)) {
             bytes32[] memory namesOfPromotion = s_namesOfPromotion;
             for (uint i = 0; i < namesOfPromotion.length; i++) {
@@ -244,56 +244,56 @@ contract ShopPromotion {
         return -1;
     }
 
-    function getNumberOfPromotions() public view returns (uint256) {
+    function getNumberOfPromotions() external view returns (uint256) {
         return s_namesOfPromotion.length;
     }
 
     function getNameOfPromotion(
         uint256 _promotionIndex
-    ) public view returns (bytes32) {
+    ) external view returns (bytes32) {
         return s_promotions[_promotionIndex].nameOfPromotion;
     }
 
     function getDescriptionOfPromotion(
         uint256 _promotionIndex
-    ) public view returns (bytes32) {
+    ) external view returns (bytes32) {
         return s_promotions[_promotionIndex].descriptionOfPromotion;
     }
 
     function getExpiringDateFromPromotion(
         uint256 _promotionIndex
-    ) public view returns (uint256) {
+    ) external view returns (uint256) {
         return s_promotions[_promotionIndex].expiringDate;
     }
 
     function getNumberOfCurrentCustomersFromPromotion(
         uint256 _promotionIndex
-    ) public view returns (uint256) {
+    ) external view returns (uint256) {
         return s_promotions[_promotionIndex].customerAddresses.length;
     }
 
     function getNumberOfMaxCustomersFromPromotion(
         uint256 _promotionIndex
-    ) public view returns (uint256) {
+    ) external view returns (uint256) {
         return s_promotions[_promotionIndex].numberOfMaxCustomers;
     }
 
     function getNumberOfMaxPromotionUsesFromPromotion(
         uint256 _promotionIndex
-    ) public view returns (uint256) {
+    ) external view returns (uint256) {
         return s_promotions[_promotionIndex].numberOfMaxPromotionUses;
     }
 
     function getCustomersFromPromotion(
         uint256 _promotionIndex
-    ) public view returns (address[] memory) {
+    ) external view returns (address[] memory) {
         return s_promotions[_promotionIndex].customerAddresses;
     }
 
     function getCustomerTimesUsedPromotion(
         uint256 _promotionIndex,
         address _customer
-    ) public view returns (uint256) {
+    ) external view returns (uint256) {
         return s_promotions[_promotionIndex].customerMapping[_customer];
     }
 }
