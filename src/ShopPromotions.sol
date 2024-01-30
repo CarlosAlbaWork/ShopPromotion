@@ -41,6 +41,11 @@ contract ShopPromotion {
         address[] customerAddresses;
         mapping(address customerAddress => uint256 timesUsedPromotion) customerMapping;
     }
+
+    constructor() {
+        i_owner = msg.sender;
+    }
+
     /**
      * @notice This modifier allows only the contract owner (shop owner) to access some
      * functionality
