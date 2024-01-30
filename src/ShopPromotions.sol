@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-//Imports
-
 /**
  * @title Smart Contract that manages promotions for local shops.
  * @author Carlos Alba
+ * @notice This contract allows to manage promotions. It was intended to serve for local shops
+ * to create a bigger link with customers.
  */
 
 contract ShopPromotion {
-    //Interfaces, errores , librerías y contratos
     error ShopPromotion_NotOwnerOfShopPromotion();
     error ShopPromotion_NotOwnerOfBusiness();
     error ShopPromotion_NotEnoughETH();
@@ -20,12 +19,18 @@ contract ShopPromotion {
     error ShopPromotion_MaxCustomersInPromotion();
     error ShopPromotion_CustomerMaxPromotionUsage();
     error ShopPromotion_CustomerNotInPromotion();
-    //Declaraciones de tipo
 
-    //Variables generales
-    address private immutable i_owner; //Wallet address from the Shop owner. The one who manages the contract
+    /**
+     * @dev i_owner is the address from the Shop owner. The one who manages the promotions
+     */
+    address private immutable i_owner;
     Promotion[] private s_promotions;
     bytes32[] private s_namesOfPromotion;
+
+    /**
+     * @dev customerAddresses helps in checking if customer exists in promotion and
+     * the quantity of current customers
+     */
 
     struct Promotion {
         bytes32 nameOfPromotion;
@@ -33,37 +38,51 @@ contract ShopPromotion {
         uint256 expiringDate;
         uint256 numberOfMaxCustomers;
         uint256 numberOfMaxPromotionUses;
-        address[] customerAddresses; //Only because we might need to get the addresses of customers
+        address[] customerAddresses;
         mapping(address customerAddress => uint256 timesUsedPromotion) customerMapping;
     }
-
+    /**
+     * @notice This modifier allows only the contract owner (shop owner) to access some
+     * functionality
+     */
     modifier onlyShopPromotionOwner() {
-        if (msg.sender != i_owner)
+        if (msg.sender != i_owner) {
             revert ShopPromotion_NotOwnerOfShopPromotion();
+        }
         _;
     }
 
-    modifier promotionChecked(uint256 _promotionindex) {
+    /**
+     * @notice This modifier checks if the promotion exists or is expired
+     * @param _promotionIndex is the index of the promotion wanted to be checked
+     */
+
+    modifier promotionChecked(uint256 _promotionIndex) {
         if (
-            s_promotions.length <= _promotionindex ||
-            s_promotions[_promotionindex].nameOfPromotion == 0x00
+            s_promotions.length <= _promotionIndex ||
+            s_promotions[_promotionIndex].nameOfPromotion == 0x00
         ) {
             revert ShopPromotion_PromotionNonexistent();
         }
-        if (block.timestamp > s_promotions[_promotionindex].expiringDate) {
+        if (block.timestamp > s_promotions[_promotionIndex].expiringDate) {
             revert ShopPromotion_PromotionEnded();
         }
         _;
     }
 
-    //Se haría desde la app un getcustomerPromotions y se haría el for en la app para checkear la info
-    //Se haría desde la app un getSellerPromotions y se haría el for en la app para checkear el índice de la promotion en el array
+    /**
+     * @notice This function applies a promotion to costumer, checking if the costumer is new and max Customers are reached
+     * or costumer has reached the max amount of Promotion usage. If both are false, checks if the costumer is new and adds him
+     * to customer list and adds 1 usage to its mapping
+     * @param _customer is the customer the promotion will be applied to
+     * @param _promotionIndex is the index of the promotion wanted to be applied
+     */
 
     function applyPromotionToCustomer(
         address _customer,
-        uint256 _promotionindex
-    ) public onlyShopPromotionOwner promotionChecked(_promotionindex) {
-        Promotion storage promotion = s_promotions[_promotionindex];
+        uint256 _promotionIndex
+    ) public onlyShopPromotionOwner promotionChecked(_promotionIndex) {
+        Promotion storage promotion = s_promotions[_promotionIndex];
         if (
             promotion.customerMapping[_customer] == 0 &&
             promotion.customerAddresses.length == promotion.numberOfMaxCustomers
@@ -79,27 +98,15 @@ contract ShopPromotion {
         if (promotion.customerMapping[_customer] == 0) {
             promotion.customerAddresses.push(_customer);
         }
-        s_promotions[_promotionindex].customerMapping[_customer]++;
+        s_promotions[_promotionIndex].customerMapping[_customer]++;
     }
 
-    //I wanted to make a function that copies the array of customers from one to another
-    //But it seems impossible to assign mappings
-    /** 
-    function copyArraysOfCustomers(
-        uint256 _oldPromotionIndex,
-        uint256 _newPromotionIndex
-    ) public onlyShopPromotionOwner {
-        if (
-            s_promotions[_newPromotionIndex].numberOfMaxCustomers <
-            s_promotions[_oldPromotionIndex].customerAddresses.length
-        ) {
-            revert ShopPromotion_MaxCustomersInPromotion();
-        }
-        s_promotions[_newPromotionIndex].customerMapping = s_promotions[
-            _oldPromotionIndex
-        ].customerMapping;
-    }
-    */
+    /**
+     * @notice This function deletes costumer, checking if the costumer is in the promotion.
+     * Then puts to 0 promotion usage, eliminates it from the array of customers
+     * @param _customer is the customer the promotion will be applied to
+     * @param _promotionIndex is the index of the promotion wanted to be applied
+     */
 
     function deleteCustomerFromPromotion(
         address _customer,
@@ -111,33 +118,43 @@ contract ShopPromotion {
         s_promotions[_promotionIndex].customerMapping[_customer] = 0;
         address[] memory customerSearch = s_promotions[_promotionIndex]
             .customerAddresses;
-        uint256 customerSearchLength = customerSearch.length;
-        if (customerSearchLength > 1) {
-            for (uint i = 0; i < customerSearchLength; i++) {
+        if (customerSearch.length > 1) {
+            for (uint i = 0; i < customerSearch.length; i++) {
                 if (customerSearch[i] == _customer) {
                     customerSearch[i] = customerSearch[
-                        customerSearchLength - 1
+                        customerSearch.length - 1
                     ];
                 }
             }
         }
-        delete customerSearch[customerSearchLength - 1];
+        delete customerSearch[customerSearch.length - 1];
         s_promotions[_promotionIndex].customerAddresses = customerSearch;
     }
 
+    /**
+     * @notice This function deletes a promotion, checking if the promotion exists.
+     * Then puts to 0x00 as promotion name, eliminates it from the array of promotions
+     * @param _promotionIndex is the index of the promotion wanted to be applied
+     */
+
     function deletePromotion(
-        uint256 _promotionindex
-    ) public onlyShopPromotionOwner promotionChecked(_promotionindex) {
+        uint256 _promotionIndex
+    ) public onlyShopPromotionOwner promotionChecked(_promotionIndex) {
         bytes32[] memory namesOfPromotion = s_namesOfPromotion;
-        s_promotions[_promotionindex].nameOfPromotion = 0x00;
+        s_promotions[_promotionIndex].nameOfPromotion = 0x00;
         if (namesOfPromotion.length > 1) {
-            namesOfPromotion[_promotionindex] = namesOfPromotion[
+            namesOfPromotion[_promotionIndex] = namesOfPromotion[
                 namesOfPromotion.length - 1
             ];
         }
         delete namesOfPromotion[namesOfPromotion.length - 1];
         s_namesOfPromotion = namesOfPromotion;
     }
+
+    /**
+     * @notice This function checks if the promotion exists.
+     * @param _promotionName is the name of the promotion wanted to be applied
+     */
 
     function existsPromotion(
         bytes32 _promotionName
@@ -150,6 +167,13 @@ contract ShopPromotion {
         }
         return false;
     }
+
+    /**
+     * @notice This function checks if the costumer is in the promotion.
+     * Returns true if exists and false if it doesn't
+     * @param _customer is the customer the promotion will be applied to
+     * @param _promotionIndex is the index of the promotion wanted to be applied
+     */
 
     function existsCustomerInPromotion(
         address _customer,
@@ -165,6 +189,10 @@ contract ShopPromotion {
         return false;
     }
 
+    /**
+     * @notice This function adds a promotion.
+     */
+
     function addPromotion(
         bytes32 _promotionName,
         bytes32 _descriptionOfPromotion,
@@ -175,9 +203,6 @@ contract ShopPromotion {
         if (_promotionName == 0x00 || existsPromotion(_promotionName)) {
             revert ShopPromotion_PromotionExistent();
         }
-
-        //NOTE: We do this unorthodox way of pushing because of the error:
-        //"Storage arrays with nested mappings do not support .push(<arg>)"
         uint256 idx = s_promotions.length;
         s_promotions.push();
         Promotion storage promotion = s_promotions[idx];
@@ -197,11 +222,18 @@ contract ShopPromotion {
         return s_namesOfPromotion;
     }
 
+    /**
+     * @notice This function gets promotion's index if exists.
+     * @param _name is the name of the promotion wanted to be applied
+     */
+
     function getPromotionIndex(bytes32 _name) public view returns (int256) {
-        bytes32[] memory namesOfPromotion = s_namesOfPromotion;
-        for (uint i = 0; i < namesOfPromotion.length; i++) {
-            if (namesOfPromotion[i] == _name) {
-                return int256(i);
+        if (existsPromotion(_name)) {
+            bytes32[] memory namesOfPromotion = s_namesOfPromotion;
+            for (uint i = 0; i < namesOfPromotion.length; i++) {
+                if (namesOfPromotion[i] == _name) {
+                    return int256(i);
+                }
             }
         }
         return -1;
@@ -212,51 +244,51 @@ contract ShopPromotion {
     }
 
     function getNameOfPromotion(
-        uint256 _promotionindex
+        uint256 _promotionIndex
     ) public view returns (bytes32) {
-        return s_promotions[_promotionindex].nameOfPromotion;
+        return s_promotions[_promotionIndex].nameOfPromotion;
     }
 
     function getDescriptionOfPromotion(
-        uint256 _promotionindex
+        uint256 _promotionIndex
     ) public view returns (bytes32) {
-        return s_promotions[_promotionindex].descriptionOfPromotion;
+        return s_promotions[_promotionIndex].descriptionOfPromotion;
     }
 
     function getExpiringDateFromPromotion(
-        uint256 _promotionindex
+        uint256 _promotionIndex
     ) public view returns (uint256) {
-        return s_promotions[_promotionindex].expiringDate;
+        return s_promotions[_promotionIndex].expiringDate;
     }
 
     function getNumberOfCurrentCustomersFromPromotion(
-        uint256 _promotionindex
+        uint256 _promotionIndex
     ) public view returns (uint256) {
-        return s_promotions[_promotionindex].customerAddresses.length;
+        return s_promotions[_promotionIndex].customerAddresses.length;
     }
 
     function getNumberOfMaxCustomersFromPromotion(
-        uint256 _promotionindex
+        uint256 _promotionIndex
     ) public view returns (uint256) {
-        return s_promotions[_promotionindex].numberOfMaxCustomers;
+        return s_promotions[_promotionIndex].numberOfMaxCustomers;
     }
 
     function getNumberOfMaxPromotionUsesFromPromotion(
-        uint256 _promotionindex
+        uint256 _promotionIndex
     ) public view returns (uint256) {
-        return s_promotions[_promotionindex].numberOfMaxPromotionUses;
+        return s_promotions[_promotionIndex].numberOfMaxPromotionUses;
     }
 
     function getCustomersFromPromotion(
-        uint256 _promotionindex
+        uint256 _promotionIndex
     ) public view returns (address[] memory) {
-        return s_promotions[_promotionindex].customerAddresses;
+        return s_promotions[_promotionIndex].customerAddresses;
     }
 
     function getCustomerTimesUsedPromotion(
-        uint256 _promotionindex,
+        uint256 _promotionIndex,
         address _customer
     ) public view returns (uint256) {
-        return s_promotions[_promotionindex].customerMapping[_customer];
+        return s_promotions[_promotionIndex].customerMapping[_customer];
     }
 }
