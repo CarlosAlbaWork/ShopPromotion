@@ -12,6 +12,7 @@ out/
 docs/
 
 # Dotenv file
+.gas-snapshot
 coverage.txt
 report.md
 .env

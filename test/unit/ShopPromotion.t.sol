@@ -13,7 +13,7 @@ contract ShopPromotionTest is Test {
         keccak256(abi.encodePacked("Test Of Promotion Description"));
     uint256 constant expiringDate = 20000;
     uint256 constant numberOfMaxCustomers = 3;
-    uint256 constant numberOfMaxPromotionUses = 3;
+    int256 constant numberOfMaxPromotionUses = 3;
 
     address constant customer1 = address(1);
     address constant customer2 = address(2);
@@ -37,9 +37,8 @@ contract ShopPromotionTest is Test {
             numberOfMaxCustomers,
             numberOfMaxPromotionUses
         );
-        indexOfPromotion = uint256(
-            shopPromotion.getPromotionIndex(nameOfPromotion)
-        );
+        indexOfPromotion = shopPromotion.getPromotionIndex(nameOfPromotion);
+        console2.log(indexOfPromotion);
         _;
     }
 
@@ -49,18 +48,18 @@ contract ShopPromotionTest is Test {
         vm.expectRevert(
             ShopPromotion.ShopPromotion_NotOwnerOfShopPromotion.selector
         );
-        shopPromotion.deletePromotion(0);
+        shopPromotion.deletePromotion(1);
     }
 
     function testModifierPromotionCheckedRevertDeleted()
         public
         promotionCreated
     {
-        shopPromotion.deletePromotion(0);
+        shopPromotion.deletePromotion(1);
         vm.expectRevert(
             ShopPromotion.ShopPromotion_PromotionNonexistent.selector
         );
-        shopPromotion.deletePromotion(0);
+        shopPromotion.deletePromotion(1);
         vm.stopPrank();
     }
 
@@ -71,7 +70,7 @@ contract ShopPromotionTest is Test {
         vm.expectRevert(
             ShopPromotion.ShopPromotion_PromotionNonexistent.selector
         );
-        shopPromotion.deletePromotion(1);
+        shopPromotion.deletePromotion(2);
         vm.stopPrank();
     }
 
@@ -79,7 +78,7 @@ contract ShopPromotionTest is Test {
         vm.warp(block.timestamp + expiringDate + 1);
         vm.roll(block.number + 1);
         vm.expectRevert(ShopPromotion.ShopPromotion_PromotionEnded.selector);
-        shopPromotion.deletePromotion(0);
+        shopPromotion.deletePromotion(1);
         vm.stopPrank();
     }
 
@@ -253,28 +252,6 @@ contract ShopPromotionTest is Test {
         assertEq(testArrayCustomers[0], customersPromo[0]);
         assertEq(testArrayCustomers[1], customersPromo[1]);
         assertEq(testArrayCustomers[2], customersPromo[2]);
-    }
-
-    function testGetPromotions() public promotionCreated {
-        testArrayPromotions.push(nameOfPromotion);
-        shopPromotion.addPromotion(
-            keccak256(abi.encodePacked("Test Promotion for Delete test ")),
-            keccak256(
-                abi.encodePacked("Test Promotion Description for Delete test ")
-            ),
-            expiringDate,
-            numberOfMaxCustomers,
-            numberOfMaxPromotionUses
-        );
-        testArrayPromotions.push(
-            keccak256(abi.encodePacked("Test Promotion for Delete test "))
-        );
-
-        bytes32[] memory promotionsArray = shopPromotion.getPromotions();
-        vm.stopPrank();
-        assertEq(testArrayPromotions.length, promotionsArray.length);
-        assertEq(testArrayPromotions[0], promotionsArray[0]);
-        assertEq(testArrayPromotions[1], promotionsArray[1]);
     }
 
     function testGetnumberOfPromotions() public promotionCreated {
