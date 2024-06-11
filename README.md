@@ -19,8 +19,6 @@ Develop a Smart Contract acting as a Database for each shop´s promotions, paire
 - Elderly people might get confused even if there´s only 1 simple step to create the address. And shop owners might not be familiarized at all with technology
   
 ## RoadMap
-- Polishing tests.
-- Static and Dynamic security simple audits (if needed)
 - Developing a simple App connected to metamask
 - Polishing the app and testing it on a testchain and mobile phone
 - End!!!!!!
